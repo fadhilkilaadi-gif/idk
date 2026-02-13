@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>pixel puppy valentine</title>
+    <!-- canvas-confetti library for the burst -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none; /* prevent accidental text selection while playing */
+        }
+
+        body {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Courier New', Courier, monospace; /* pixel-ish font */
+            position: relative;
+            overflow: hidden; /* no scroll, everything contained */
+            background-color: #ffd9e6; /* warm fallback */
+        }
+
+        /* pixel puppy gif background with overlay */
+        .background-gif {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url('https://media.tenor.com/V0GiOqI_8KYAAAAC/pixel-puppy.gif'); /* cute pixel puppy */
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges; /* for extra pixel love */
+            opacity: 0.9;
+            z-index: 0;
+        }
+
+        /* soft romantic overlay so text pops */
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(255, 200, 220, 0.25); /* soft pink veil */
+            backdrop-filter: blur(1px); /* slight softness, keeps pixel vibe */
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        /* main content card */
+        .content {
+            position: relative;
+            z-index: 10;
+            background-color: rgba(255, 240, 245, 0.85);
+            border: 4px solid #ff99bb;
+            border-radius: 40px 40px 20px 20px;
+            padding: 2rem 2.5rem;
+            max-width: 600px;
+            width: 90%;
+            text-align: center;
+            box-shadow: 0 20px 30px rgba(200, 50, 100, 0.3);
+            backdrop-filter: blur(2px);
+            margin: 20px;
+            transition: all 0.3s ease;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            color: #a13d5f;
+            text-shadow: 3px 3px 0 #ffc1cc;
+            margin-bottom: 1.5rem;
+            letter-spacing: 2px;
+            font-weight: bold;
+            word-break: break-word;
+        }
+
+        /* button container: holds yes (inline) and absolute no */
+        .button-panel {
+            position: relative;
+            min-height: 80px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 20px 0 10px;
+            width: 100%;
+        }
+
+        .yes-button {
+            background-color: #ff4d6d;
+            border: 4px solid white;
+            color: white;
+            font-size: 2rem;
+            font-weight: bold;
+            padding: 15px 40px;
+            border-radius: 60px;
+            cursor: pointer;
+            box-shadow: 0 8px 0 #b32e4a, 0 10px 20px rgba(0,0,0,0.2);
+            transition: 0.07s ease;
+            font-family: 'Courier New', monospace;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            image-rendering: pixelated;
+            display: inline-block;
+            z-index: 20;
+        }
+
+        .yes-button:hover {
+            transform: translateY(4px);
+            box-shadow: 0 4px 0 #b32e4a, 0 8px 12px rgba(0,0,0,0.2);
+        }
+
+        .no-button {
+            position: absolute;
+            background-color: #5a3e4a;
+            border: 4px solid #ffb3c6;
+            color: #ffe4ec;
+            font-size: 2rem;
+            font-weight: bold;
+            padding: 15px 30px;
+            border-radius: 60px;
+            cursor: default; /* still shows arrow, but we move it */
+            box-shadow: 0 8px 0 #3a2a32, 0 10px 20px rgba(0,0,0,0.2);
+            font-family: 'Courier New', monospace;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            white-space: nowrap;
+            z-index: 25;
+            transition: left 0.08s ease-out, top 0.08s ease-out; /* quick zip */
+            will-change: left, top;
+            pointer-events: auto;
+            left: 60%; /* initial spot near yes */
+            top: 0;
+        }
+
+        /* message that appears after yes */
+        .happy-message {
+            font-size: 1.8rem;
+            color: #a13d5f;
+            background: #fff0f5;
+            padding: 2rem 1.5rem;
+            border-radius: 50px 50px 30px 30px;
+            border: 4px solid #ff99bb;
+            box-shadow: inset 0 0 0 3px white, 0 15px 20px #ffb6c1;
+            margin: 1rem 0;
+            line-height: 1.4;
+            font-weight: bold;
+            text-shadow: 2px 2px 0 #ffbebe;
+        }
+
+        .happy-message span {
+            display: inline-block;
+            font-size: 2.2rem;
+            filter: drop-shadow(2px 2px 0 #ff99bb);
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* ---- balloons (romantic & floaty) ---- */
+        .balloon {
+            position: fixed;
+            bottom: -10%;
+            width: 50px;
+            height: 70px;
+            background-color: #ffb3c6;
+            border-radius: 50% 50% 40% 40%;
+            box-shadow: inset -5px -10px 0 rgba(0,0,0,0.1);
+            z-index: 5;
+            animation: floatUp 8s linear infinite;
+            transform-origin: bottom center;
+        }
+
+        .balloon::after {
+            content: '';
+            position: absolute;
+            width: 2px;
+            height: 50px;
+            background-color: #997a8a;
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .balloon::before {
+            content: '';
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            background-color: #aa7a8a;
+            border-radius: 50%;
+            top: -6px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        /* different colors & positions */
+        .balloon1 { left: 5%; background-color: #ff99bb; animation-duration: 7s; }
+        .balloon2 { left: 20%; background-color: #ffcc99; animation-duration: 10s; }
+        .balloon3 { right: 12%; background-color: #ffa5b0; animation-duration: 9s; }
+        .balloon4 { right: 28%; background-color: #fbbbcd; animation-duration: 12s; }
+        .balloon5 { left: 40%; background-color: #ffd0dd; animation-duration: 8.5s; }
+
+        @keyframes floatUp {
+            0% { transform: translateY(0) rotate(2deg); opacity: 0.9; bottom: -10%; }
+            100% { transform: translateY(-120vh) rotate(-3deg); opacity: 0.4; }
+        }
+
+        /* little hearts for romance */
+        .heart-deco {
+            position: fixed;
+            color: #ff99aa;
+            font-size: 22px;
+            z-index: 3;
+            opacity: 0.4;
+            pointer-events: none;
+            animation: twinkle 3s infinite;
+        }
+
+        @keyframes twinkle {
+            0% { opacity: 0.3; transform: scale(1); }
+            50% { opacity: 0.8; transform: scale(1.2); }
+            100% { opacity: 0.3; transform: scale(1); }
+        }
+
+        /* responsive adjustments */
+        @media (max-width: 500px) {
+            h1 { font-size: 2rem; }
+            .yes-button, .no-button { font-size: 1.5rem; padding: 10px 20px; }
+            .happy-message { font-size: 1.3rem; }
+        }
+    </style>
+</head>
+<body>
+    <!-- pixel puppy background -->
+    <div class="background-gif" aria-hidden="true"></div>
+    <div class="overlay" aria-hidden="true"></div>
+
+    <!-- floating balloons (always visible) -->
+    <div class="balloon balloon1"></div>
+    <div class="balloon balloon2"></div>
+    <div class="balloon balloon3"></div>
+    <div class="balloon balloon4"></div>
+    <div class="balloon balloon5"></div>
+
+    <!-- random hearts for extra romance -->
+    <div class="heart-deco" style="top: 12%; left: 8%;">❤️</div>
+    <div class="heart-deco" style="top: 33%; right: 15%;">🧡</div>
+    <div class="heart-deco" style="bottom: 20%; left: 18%;">💖</div>
+    <div class="heart-deco" style="bottom: 45%; right: 22%;">💘</div>
+    <div class="heart-deco" style="top: 70%; left: 78%;">💗</div>
+
+    <!-- main valentine card -->
+    <div class="content" id="valentineCard">
+        <!-- question and buttons section -->
+        <div id="questionSection">
+            <h1>Will you be my Valentine?</h1>
+            <div class="button-panel" id="buttonPanel">
+                <button class="yes-button" id="yesBtn">YES</button>
+                <button class="no-button" id="noBtn">NO</button>
+            </div>
+            <p style="color:#b34e6e; margin-top:1rem; font-size:1.2rem; text-shadow:1px 1px white;">(the NO button is a little shy ✨)</p>
+        </div>
+
+        <!-- hidden happy message (shown after YES) -->
+        <div id="responseMessage" class="happy-message hidden">
+            <span>YIPPEEE! IM SO HAPPY! 🥰</span><br>
+            <span style="font-size:1.4rem; display:block; margin-top:1rem;">I don't know much about Valentine's and this might come off as cheesy but I wanted to do it for you.</span>
+            <span style="display:block; margin-top:1.2rem; font-size:2rem;">💖💖💖</span>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            // get elements
+            const noButton = document.getElementById('noBtn');
+            const yesButton = document.getElementById('yesBtn');
+            const questionSection = document.getElementById('questionSection');
+            const messageDiv = document.getElementById('responseMessage');
+            const buttonPanel = document.getElementById('buttonPanel');
+
+            // helper: move NO button randomly within buttonPanel
+            function moveNoButtonRandomly() {
+                if (!buttonPanel || !noButton) return;
+
+                // Ensure button is in absolute mode and panel is relative
+                const panelRect = buttonPanel.getBoundingClientRect();
+                const noRect = noButton.getBoundingClientRect();
+
+                // button width/height including margin? but offsetWidth is safe
+                const btnWidth = noButton.offsetWidth;
+                const btnHeight = noButton.offsetHeight;
+
+                // max left/top within panel (avoid going out of edges)
+                const maxLeft = Math.max(0, panelRect.width - btnWidth);
+                const maxTop = Math.max(0, panelRect.height - btnHeight);
+
+                // if panel is too small, just stick to 0,0 but that's rare
+                let newLeft = 0;
+                let newTop = 0;
+
+                if (maxLeft > 0) {
+                    newLeft = Math.random() * maxLeft;
+                }
+                if (maxTop > 0) {
+                    newTop = Math.random() * maxTop;
+                }
+
+                // apply position (relative to panel)
+                noButton.style.left = newLeft + 'px';
+                noButton.style.top = newTop + 'px';
+            }
+
+            // initial random placement (but still keep it visible)
+            setTimeout(() => {
+                moveNoButtonRandomly();
+            }, 30);
+
+            // move no button on mouseenter, touchstart, and click (for safety)
+            function evadeHandler(e) {
+                e.preventDefault();  // prevent any accidental interaction
+                e.stopPropagation();
+                moveNoButtonRandomly();
+                return false;
+            }
+
+            // multiple events to ensure it's never clickable
+            noButton.addEventListener('mouseenter', evadeHandler);
+            noButton.addEventListener('touchstart', evadeHandler, { passive: false });
+            noButton.addEventListener('click', evadeHandler); // if somehow click occurs, move away and block
+            noButton.addEventListener('mousedown', evadeHandler); // for extra pre-click
+
+            // also move on window resize so button stays inside panel
+            window.addEventListener('resize', () => {
+                moveNoButtonRandomly();
+            });
+
+            // Yes button magic: confetti + show message
+            yesButton.addEventListener('click', function(e) {
+                e.preventDefault();
+
+                // hide question section, show happy message
+                questionSection.classList.add('hidden');
+                messageDiv.classList.remove('hidden');
+
+                // CONFETTI BURST! use canvas-confetti library
+                // multiple bursts for a dramatic effect
+                confetti({ particleCount: 120, spread: 100, origin: { y: 0.6 }, startVelocity: 25, colors: ['#ff4d6d', '#ffb3c6', '#ff99bb', '#ffffff'] });
+                confetti({ particleCount: 80, spread: 70, origin: { y: 0.5, x: 0.2 }, startVelocity: 30, colors: ['#ffcc99', '#ffa5b0', '#fbbbcd'] });
+                confetti({ particleCount: 80, spread: 70, origin: { y: 0.5, x: 0.8 }, startVelocity: 30, colors: ['#ffb3c6', '#ff99bb', '#ffe4ec'] });
+
+                // add more confetti after a tiny delay for layering
+                setTimeout(() => {
+                    confetti({ particleCount: 200, spread: 120, origin: { y: 0.4 }, startVelocity: 20, colors: ['#ff4d6d', '#ffe4ec', '#ffb3c6'] });
+                }, 150);
+                setTimeout(() => {
+                    confetti({ particleCount: 150, spread: 90, origin: { y: 0.7, x: 0.5 }, startVelocity: 35, colors: ['#ff99bb', '#ffffff', '#ffcc99'] });
+                }, 300);
+
+                // also add some balloon-ish confetti (just for fun)
+                for (let i=0; i<3; i++) {
+                    setTimeout(() => {
+                        confetti({ particleCount: 40, spread: 60, origin: { y: 0.3, x: 0.3 + i*0.2 }, startVelocity: 40, colors: ['#ffb3c6', '#fbbbcd', '#ffa5b0'] });
+                    }, 400 + i*100);
+                }
+            });
+
+            // just for fun: if someone double-taps no or manages to hover, we re-move.
+            noButton.addEventListener('mouseover', evadeHandler); // redundant but safe
+
+            // ensure noButton never gets focus (also helps)
+            noButton.addEventListener('focus', (e) => e.target.blur());
+
+            // optional: on any attempt to move mouse on panel, we could move again, but that's overkill.
+            // we also want the no button to start within visible range after font changes etc.
+            // call again after fonts are ready (just in case)
+            window.addEventListener('load', () => {
+                moveNoButtonRandomly();
+            });
+
+            // move also if orientation change (mobile)
+            window.addEventListener('orientationchange', () => {
+                setTimeout(moveNoButtonRandomly, 50);
+            });
+        })();
+    </script>
+
+    <!-- small extra inline style for balloon animation smoothness -->
+    <style>
+        /* ensure no button text doesn't wrap */
+        .no-button {
+            white-space: nowrap;
+        }
+        /* give button panel a little breathing room for the no button to move */
+        .button-panel {
+            min-height: 100px;
+        }
+        /* yes button stays clickable */
+        .yes-button {
+            position: relative;
+            z-index: 30;
+        }
+        /* mobile fine-tuning */
+        @media (max-width: 450px) {
+            .button-panel {
+                min-height: 120px;
+            }
+        }
+        /* add subtle heart beat to content */
+        .content {
+            animation: softPulse 3s infinite alternate;
+        }
+        @keyframes softPulse {
+            0% { box-shadow: 0 15px 25px rgba(255, 105, 150, 0.2); }
+            100% { box-shadow: 0 20px 40px rgba(255, 20, 100, 0.4); }
+        }
+    </style>
+</body>
+</html>
