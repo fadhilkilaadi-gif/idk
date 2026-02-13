@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>pixel puppy valentine + your own photo</title>
+    <!-- canvas-confetti library -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+        }
+
+        body {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Courier New', Courier, monospace;
+            position: relative;
+            overflow: hidden;
+            background-color: #ffd9e6;
+        }
+
+        /* ============================================================
+           BACKGROUND IMAGE – REPLACE THE URL WITH YOUR LOCAL FILE
+           Example: url('my-valentine.jpg') – place the image in the
+           same folder as this HTML file.
+           ============================================================ */
+        .background-gif {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            /* === CHANGE THIS LINE: replace the URL with your own image === */
+            background-image: url('hehe.jpg');
+            /* === if you want to use a local photo, write: url('your-photo.jpg') === */
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            image-rendering: pixelated;  /* you can remove this line for natural photos */
+            image-rendering: crisp-edges;
+            opacity: 0.9;
+            z-index: 0;
+        }
+
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(255, 200, 220, 0.25);
+            backdrop-filter: blur(1px);
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        .content {
+            position: relative;
+            z-index: 10;
+            background-color: rgba(255, 240, 245, 0.85);
+            border: 4px solid #ff99bb;
+            border-radius: 40px 40px 20px 20px;
+            padding: 2rem 2.5rem;
+            max-width: 600px;
+            width: 90%;
+            text-align: center;
+            box-shadow: 0 20px 30px rgba(200, 50, 100, 0.3);
+            backdrop-filter: blur(2px);
+            margin: 20px;
+            transition: all 0.3s ease;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            color: #a13d5f;
+            text-shadow: 3px 3px 0 #ffc1cc;
+            margin-bottom: 1.5rem;
+            letter-spacing: 2px;
+            font-weight: bold;
+            word-break: break-word;
+        }
+
+        .button-panel {
+            position: relative;
+            min-height: 80px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 20px 0 10px;
+            width: 100%;
+        }
+
+        .yes-button {
+            background-color: #ff4d6d;
+            border: 4px solid white;
+            color: white;
+            font-size: 2rem;
+            font-weight: bold;
+            padding: 15px 40px;
+            border-radius: 60px;
+            cursor: pointer;
+            box-shadow: 0 8px 0 #b32e4a, 0 10px 20px rgba(0,0,0,0.2);
+            transition: 0.07s ease;
+            font-family: 'Courier New', monospace;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            image-rendering: pixelated;
+            display: inline-block;
+            z-index: 20;
+        }
+
+        .yes-button:hover {
+            transform: translateY(4px);
+            box-shadow: 0 4px 0 #b32e4a, 0 8px 12px rgba(0,0,0,0.2);
+        }
+
+        .no-button {
+            position: absolute;
+            background-color: #5a3e4a;
+            border: 4px solid #ffb3c6;
+            color: #ffe4ec;
+            font-size: 2rem;
+            font-weight: bold;
+            padding: 15px 30px;
+            border-radius: 60px;
+            cursor: default;
+            box-shadow: 0 8px 0 #3a2a32, 0 10px 20px rgba(0,0,0,0.2);
+            font-family: 'Courier New', monospace;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            white-space: nowrap;
+            z-index: 25;
+            transition: left 0.08s ease-out, top 0.08s ease-out;
+            will-change: left, top;
+            pointer-events: auto;
+            left: 60%;
+            top: 0;
+        }
+
+        .happy-message {
+            font-size: 1.8rem;
+            color: #a13d5f;
+            background: #fff0f5;
+            padding: 2rem 1.5rem;
+            border-radius: 50px 50px 30px 30px;
+            border: 4px solid #ff99bb;
+            box-shadow: inset 0 0 0 3px white, 0 15px 20px #ffb6c1;
+            margin: 1rem 0;
+            line-height: 1.4;
+            font-weight: bold;
+            text-shadow: 2px 2px 0 #ffbebe;
+        }
+
+        .happy-message span {
+            display: inline-block;
+            font-size: 2.2rem;
+            filter: drop-shadow(2px 2px 0 #ff99bb);
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* balloons */
+        .balloon {
+            position: fixed;
+            bottom: -10%;
+            width: 50px;
+            height: 70px;
+            background-color: #ffb3c6;
+            border-radius: 50% 50% 40% 40%;
+            box-shadow: inset -5px -10px 0 rgba(0,0,0,0.1);
+            z-index: 5;
+            animation: floatUp 8s linear infinite;
+            transform-origin: bottom center;
+        }
+
+        .balloon::after {
+            content: '';
+            position: absolute;
+            width: 2px;
+            height: 50px;
+            background-color: #997a8a;
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .balloon::before {
+            content: '';
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            background-color: #aa7a8a;
+            border-radius: 50%;
+            top: -6px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .balloon1 { left: 5%; background-color: #ff99bb; animation-duration: 7s; }
+        .balloon2 { left: 20%; background-color: #ffcc99; animation-duration: 10s; }
+        .balloon3 { right: 12%; background-color: #ffa5b0; animation-duration: 9s; }
+        .balloon4 { right: 28%; background-color: #fbbbcd; animation-duration: 12s; }
+        .balloon5 { left: 40%; background-color: #ffd0dd; animation-duration: 8.5s; }
+
+        @keyframes floatUp {
+            0% { transform: translateY(0) rotate(2deg); opacity: 0.9; bottom: -10%; }
+            100% { transform: translateY(-120vh) rotate(-3deg); opacity: 0.4; }
+        }
+
+        .heart-deco {
+            position: fixed;
+            color: #ff99aa;
+            font-size: 22px;
+            z-index: 3;
+            opacity: 0.4;
+            pointer-events: none;
+            animation: twinkle 3s infinite;
+        }
+
+        @keyframes twinkle {
+            0% { opacity: 0.3; transform: scale(1); }
+            50% { opacity: 0.8; transform: scale(1.2); }
+            100% { opacity: 0.3; transform: scale(1); }
+        }
+
+        @media (max-width: 500px) {
+            h1 { font-size: 2rem; }
+            .yes-button, .no-button { font-size: 1.5rem; padding: 10px 20px; }
+            .happy-message { font-size: 1.3rem; }
+        }
+    </style>
+</head>
+<body>
+    <!-- background layer – you can replace the image in the CSS above -->
+    <div class="background-gif" id="bgImage" aria-hidden="true"></div>
+    <div class="overlay" aria-hidden="true"></div>
+
+    <!-- floating balloons -->
+    <div class="balloon balloon1"></div>
+    <div class="balloon balloon2"></div>
+    <div class="balloon balloon3"></div>
+    <div class="balloon balloon4"></div>
+    <div class="balloon balloon5"></div>
+
+    <!-- random hearts -->
+    <div class="heart-deco" style="top: 12%; left: 8%;">❤️</div>
+    <div class="heart-deco" style="top: 33%; right: 15%;">🧡</div>
+    <div class="heart-deco" style="bottom: 20%; left: 18%;">💖</div>
+    <div class="heart-deco" style="bottom: 45%; right: 22%;">💘</div>
+    <div class="heart-deco" style="top: 70%; left: 78%;">💗</div>
+
+    <!-- main valentine card -->
+    <div class="content" id="valentineCard">
+        <div id="questionSection">
+            <h1>Will you be my Valentine, kannamma? </h1>
+            <div class="button-panel" id="buttonPanel">
+                <button class="yes-button" id="yesBtn">YES</button>
+                <button class="no-button" id="noBtn">NO</button>
+            </div>
+            <p style="color:#b34e6e; margin-top:1rem; font-size:1.2rem; text-shadow:1px 1px white;">()</p>
+        </div>
+
+        <div id="responseMessage" class="happy-message hidden">
+            <span>YIPPEEE! IM SO HAPPY! 🥰</span><br>
+            <span style="font-size:1.4rem; display:block; margin-top:1rem;">I don't know much about Valentine's and this might come off as cheesy but I wanted to do it for you. It's the least I coudl do it for you. You really make me the happiest and I'd love for you to be my Valentine. YOURE AN AMAZING PERSON AAAAAAA. last minute message hehehe</span>
+            <span style="display:block; margin-top:1.2rem; font-size:2rem;">💖💖💖</span>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            const noButton = document.getElementById('noBtn');
+            const yesButton = document.getElementById('yesBtn');
+            const questionSection = document.getElementById('questionSection');
+            const messageDiv = document.getElementById('responseMessage');
+            const buttonPanel = document.getElementById('buttonPanel');
+
+            // ----- moving NO button -----
+            function moveNoButtonRandomly() {
+                if (!buttonPanel || !noButton) return;
+                const panelRect = buttonPanel.getBoundingClientRect();
+                const btnWidth = noButton.offsetWidth;
+                const btnHeight = noButton.offsetHeight;
+                const maxLeft = Math.max(0, panelRect.width - btnWidth);
+                const maxTop = Math.max(0, panelRect.height - btnHeight);
+                let newLeft = 0, newTop = 0;
+                if (maxLeft > 0) newLeft = Math.random() * maxLeft;
+                if (maxTop > 0) newTop = Math.random() * maxTop;
+                noButton.style.left = newLeft + 'px';
+                noButton.style.top = newTop + 'px';
+            }
+
+            setTimeout(() => moveNoButtonRandomly(), 30);
+
+            function evadeHandler(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                moveNoButtonRandomly();
+                return false;
+            }
+
+            noButton.addEventListener('mouseenter', evadeHandler);
+            noButton.addEventListener('touchstart', evadeHandler, { passive: false });
+            noButton.addEventListener('click', evadeHandler);
+            noButton.addEventListener('mousedown', evadeHandler);
+            noButton.addEventListener('mouseover', evadeHandler);
+            noButton.addEventListener('focus', (e) => e.target.blur());
+
+            window.addEventListener('resize', moveNoButtonRandomly);
+            window.addEventListener('load', moveNoButtonRandomly);
+            window.addEventListener('orientationchange', () => setTimeout(moveNoButtonRandomly, 50));
+
+            // ----- YES button magic -----
+            yesButton.addEventListener('click', function(e) {
+                e.preventDefault();
+
+                questionSection.classList.add('hidden');
+                messageDiv.classList.remove('hidden');
+
+                // confetti bursts
+                confetti({ particleCount: 120, spread: 100, origin: { y: 0.6 }, startVelocity: 25, colors: ['#ff4d6d', '#ffb3c6', '#ff99bb', '#ffffff'] });
+                confetti({ particleCount: 80, spread: 70, origin: { y: 0.5, x: 0.2 }, startVelocity: 30, colors: ['#ffcc99', '#ffa5b0', '#fbbbcd'] });
+                confetti({ particleCount: 80, spread: 70, origin: { y: 0.5, x: 0.8 }, startVelocity: 30, colors: ['#ffb3c6', '#ff99bb', '#ffe4ec'] });
+
+                setTimeout(() => {
+                    confetti({ particleCount: 200, spread: 120, origin: { y: 0.4 }, startVelocity: 20, colors: ['#ff4d6d', '#ffe4ec', '#ffb3c6'] });
+                }, 150);
+                setTimeout(() => {
+                    confetti({ particleCount: 150, spread: 90, origin: { y: 0.7, x: 0.5 }, startVelocity: 35, colors: ['#ff99bb', '#ffffff', '#ffcc99'] });
+                }, 300);
+
+                for (let i=0; i<3; i++) {
+                    setTimeout(() => {
+                        confetti({ particleCount: 40, spread: 60, origin: { y: 0.3, x: 0.3 + i*0.2 }, startVelocity: 40, colors: ['#ffb3c6', '#fbbbcd', '#ffa5b0'] });
+                    }, 400 + i*100);
+                }
+            });
+        })();
+    </script>
+
+    <style>
+        .button-panel {
+            min-height: 100px;
+        }
+        .yes-button {
+            position: relative;
+            z-index: 30;
+        }
+        @media (max-width: 450px) {
+            .button-panel {
+                min-height: 120px;
+            }
+        }
+        .content {
+            animation: softPulse 3s infinite alternate;
+        }
+        @keyframes softPulse {
+            0% { box-shadow: 0 15px 25px rgba(255, 105, 150, 0.2); }
+            100% { box-shadow: 0 20px 40px rgba(255, 20, 100, 0.4); }
+        }
+    </style>
+</body>
+</html>
